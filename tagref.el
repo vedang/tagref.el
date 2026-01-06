@@ -1,12 +1,13 @@
 ;;; tagref.el --- Tagref cross-reference support -*- lexical-binding: t -*-
 
-;; Copyright (C) 2026 Free Software Foundation, Inc.
+;; Copyright (C) 2026 Tagref Contributors
 
 ;; Author: Tagref Contributors
+;; Maintainer: Tagref Contributors
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: tools, convenience
-;; URL: https://github.com/stepchowfun/tagref
+;; Homepage: https://github.com/stepchowfun/tagref
 
 ;; This file is not part of GNU Emacs.
 

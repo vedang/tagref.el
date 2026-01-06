@@ -1,4 +1,4 @@
-.PHONY: test check format clean all deps
+.PHONY: test check check-compile check-doc check-package-lint format clean all deps
 
 EMACS ?= emacs
 DEPS_DIR = .deps
@@ -12,6 +12,10 @@ deps:
 		echo "Installing buttercup..."; \
 		git clone --depth 1 https://github.com/jorgenschaefer/emacs-buttercup.git $(DEPS_DIR)/buttercup; \
 	fi
+	@if [ ! -d "$(DEPS_DIR)/package-lint" ]; then \
+		echo "Installing package-lint..."; \
+		git clone --depth 1 https://github.com/purcell/package-lint.git $(DEPS_DIR)/package-lint; \
+	fi
 
 # Run Buttercup tests
 test: deps
@@ -23,8 +27,15 @@ test: deps
 		-l test/tagref-test.el \
 		-f buttercup-run
 
-# Run linting: byte-compile and checkdoc
-check: check-compile check-doc
+# Run linting: byte-compile, checkdoc, and package-lint
+check: check-compile check-doc check-package-lint
+
+check-package-lint: deps
+	$(EMACS) --batch \
+		-L . \
+		-L $(DEPS_DIR)/package-lint \
+		-l package-lint \
+		-f package-lint-batch-and-exit tagref.el
 
 check-compile:
 	$(EMACS) --batch \
