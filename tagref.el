@@ -190,13 +190,34 @@ Returns nil if not inside a directive."
   "Return completion table for tagref identifiers."
   (mapcar #'car (tagref--get-tags)))
 
-;;;; Commands (stubs)
+;;;; Check Command
+
+(defvar tagref-error-regexp-alist
+  `((tagref-error
+     ,(rx "at " (group (+ (not ":"))) ":" (group (+ digit)))
+     1 2 nil 2))
+  "Compilation error regexp alist for tagref output.")
 
 ;;;###autoload
 (defun tagref-check ()
   "Run tagref check and display results in a compilation buffer."
   (interactive)
-  (message "Not yet implemented"))
+  (let ((default-directory (tagref--project-root))
+        (command (mapconcat #'shell-quote-argument
+                            (append (list tagref-executable)
+                                    tagref-arguments
+                                    (list "check"))
+                            " ")))
+    (compilation-start command 'tagref-compilation-mode)))
+
+(define-compilation-mode tagref-compilation-mode "Tagref"
+  "Compilation mode for tagref check output."
+  (setq-local compilation-error-regexp-alist-alist
+              (append tagref-error-regexp-alist
+                      compilation-error-regexp-alist-alist))
+  (setq-local compilation-error-regexp-alist '(tagref-error)))
+
+;;;; Tag Listing (stub)
 
 ;;;###autoload
 (defun tagref-list-tags ()
