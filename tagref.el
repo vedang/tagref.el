@@ -1,0 +1,115 @@
+;;; tagref.el --- Tagref cross-reference support -*- lexical-binding: t -*-
+
+;; Copyright (C) 2026 Free Software Foundation, Inc.
+
+;; Author: Tagref Contributors
+;; Version: 0.1.0
+;; Package-Requires: ((emacs "27.1"))
+;; Keywords: tools, convenience
+;; URL: https://github.com/stepchowfun/tagref
+
+;; This file is not part of GNU Emacs.
+
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; This package provides Emacs integration for tagref, a tool for managing
+;; cross-references in code.  It provides:
+;;
+;; - Completion for [ref:] and [tag:] directives
+;; - Xref integration for navigating to tag definitions (M-.)
+;; - A check command that displays errors in a compilation buffer
+;; - A tag listing command for browsing all tags
+;;
+;; Enable `tagref-mode' in buffers where you want tagref support.
+
+;;; Code:
+
+(require 'cl-lib)
+(require 'xref)
+(require 'compile)
+(require 'tabulated-list)
+
+;;;; Customization
+
+(defgroup tagref nil
+  "Tagref cross-reference support."
+  :group 'tools
+  :prefix "tagref-")
+
+(defcustom tagref-executable "tagref"
+  "Path to the tagref executable."
+  :type 'string
+  :group 'tagref)
+
+(defcustom tagref-arguments nil
+  "Additional arguments passed to tagref commands."
+  :type '(repeat string)
+  :group 'tagref)
+
+;; Forward declaration for byte-compiler
+(defvar tagref-mode)
+
+;;;; Stub Functions
+
+(defun tagref--capf ()
+  "Completion-at-point function for tagref directives."
+  nil)
+
+(defun tagref--xref-backend ()
+  "Return the tagref xref backend if in `tagref-mode'."
+  nil)
+
+;;;###autoload
+(defun tagref-check ()
+  "Run tagref check and display results in a compilation buffer."
+  (interactive)
+  (message "Not yet implemented"))
+
+;;;###autoload
+(defun tagref-list-tags ()
+  "Display a list of all tags in the project."
+  (interactive)
+  (message "Not yet implemented"))
+
+;;;; Minor Mode
+
+(defun tagref--enable ()
+  "Enable `tagref-mode' features."
+  (add-hook 'completion-at-point-functions #'tagref--capf nil t)
+  (add-hook 'xref-backend-functions #'tagref--xref-backend nil t))
+
+(defun tagref--disable ()
+  "Disable `tagref-mode' features."
+  (remove-hook 'completion-at-point-functions #'tagref--capf t)
+  (remove-hook 'xref-backend-functions #'tagref--xref-backend t))
+
+;;;###autoload
+(define-minor-mode tagref-mode
+  "Minor mode for tagref cross-reference support.
+
+When enabled, provides:
+- Completion for [ref:] and [tag:] directives
+- Xref integration for \\[xref-find-definitions] navigation to tag definitions
+- `tagref-check' command for validation
+- `tagref-list-tags' command for browsing tags"
+  :lighter " Tagref"
+  :group 'tagref
+  (if tagref-mode
+      (tagref--enable)
+    (tagref--disable)))
+
+(provide 'tagref)
+;;; tagref.el ends here
