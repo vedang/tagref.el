@@ -68,6 +68,29 @@
       (tagref-mode -1)
       (expect (memq 'tagref--xref-backend xref-backend-functions) :to-be nil))))
 
+;;; Utility Function Tests
+
+(describe "tagref--project-root"
+  (it "returns a directory"
+    (expect (file-directory-p (tagref--project-root)) :to-be t)))
+
+(describe "tagref--parse-tag-line"
+  (it "parses valid tag line"
+    (let ((result (tagref--parse-tag-line "[tag:my_tag] @ src/main.rs:42")))
+      (expect result :not :to-be nil)
+      (expect (car result) :to-equal "my_tag")
+      (expect (cadr result) :to-equal "src/main.rs")
+      (expect (cddr result) :to-equal 42)))
+
+  (it "parses tag with spaces"
+    (let ((result (tagref--parse-tag-line "[tag:my tag name] @ path/to/file.py:100")))
+      (expect result :not :to-be nil)
+      (expect (car result) :to-equal "my tag name")))
+
+  (it "returns nil for invalid line"
+    (expect (tagref--parse-tag-line "not a tag line") :to-be nil)
+    (expect (tagref--parse-tag-line "") :to-be nil)))
+
 ;;; Command Tests
 
 (describe "tagref-check"

@@ -62,6 +62,48 @@
 ;; Forward declaration for byte-compiler
 (defvar tagref-mode)
 
+;;;; Utilities
+
+(defun tagref--project-root ()
+  "Return the project root directory.
+Uses `project-root' if available, otherwise `default-directory'."
+  (or (when-let ((proj (project-current)))
+        (if (fboundp 'project-root)
+            (project-root proj)
+          ;; Emacs 27 compatibility
+          (with-no-warnings
+            (car (project-roots proj)))))
+      default-directory))
+
+(defun tagref--call-process (&rest args)
+  "Call tagref with ARGS and return output as string.
+Returns nil if tagref fails."
+  (let ((default-directory (tagref--project-root)))
+    (with-temp-buffer
+      (let ((exit-code (apply #'call-process
+                              tagref-executable
+                              nil t nil
+                              (append tagref-arguments args))))
+        (when (zerop exit-code)
+          (buffer-string))))))
+
+(defun tagref--parse-tag-line (line)
+  "Parse a tagref `list-tags' output LINE.
+Returns (NAME . (FILE . LINE-NUMBER)) or nil."
+  ;; Format: [tag:name] @ file:line
+  (when (string-match "\\[tag:\\([^]]+\\)\\] @ \\(.+\\):\\([0-9]+\\)$" line)
+    (let ((name (match-string 1 line))
+          (file (match-string 2 line))
+          (line-num (string-to-number (match-string 3 line))))
+      (cons name (cons file line-num)))))
+
+(defun tagref--get-tags ()
+  "Get all tags from the project.
+Returns an alist of (NAME . (FILE . LINE-NUMBER))."
+  (when-let ((output (tagref--call-process "list-tags")))
+    (delq nil (mapcar #'tagref--parse-tag-line
+                      (split-string output "\n" t)))))
+
 ;;;; Stub Functions
 
 (defun tagref--capf ()
