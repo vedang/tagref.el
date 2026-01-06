@@ -1,0 +1,200 @@
+#+TITLE: tagref.el
+#+AUTHOR: Tagref Contributors
+#+OPTIONS: toc:2
+
+Emacs integration for [[https://github.com/stepchowfun/tagref][tagref]], a tool for managing cross-references in code.
+
+* Overview
+
+Tagref helps you maintain cross-references in your codebase using simple tags:
+
+- =[tag:name]= defines a tag
+- =[ref:name]= references a tag
+- =[file:path]= references a file
+- =[dir:path]= references a directory
+
+This package provides Emacs support for working with these directives:
+
+- *Completion* for =[ref:]= and =[tag:]= with existing tag names
+- *Navigation* via =M-.= to jump from a reference to its tag definition
+- *Validation* via =M-x tagref-check= with clickable error locations
+- *Browsing* via =M-x tagref-list-tags= to see all tags in the project
+
+* Installation
+
+** Requirements
+
+- Emacs 27.1 or later
+- [[https://github.com/stepchowfun/tagref][tagref]] CLI installed and available in your =PATH=
+
+** Manual Installation
+
+Add the =emacs/= directory to your load path:
+
+#+begin_src emacs-lisp
+(add-to-list 'load-path "/path/to/tagref/emacs")
+(require 'tagref)
+#+end_src
+
+** use-package
+
+#+begin_src emacs-lisp
+(use-package tagref
+  :load-path "/path/to/tagref/emacs"
+  :hook (prog-mode . tagref-mode))
+#+end_src
+
+** straight.el
+
+#+begin_src emacs-lisp
+(straight-use-package
+ '(tagref :type git
+          :host github
+          :repo "stepchowfun/tagref"
+          :files ("emacs/*.el")))
+#+end_src
+
+* Usage
+
+** Enabling the Mode
+
+Enable =tagref-mode= in any buffer:
+
+#+begin_example
+M-x tagref-mode
+#+end_example
+
+Or add it to a mode hook:
+
+#+begin_src emacs-lisp
+(add-hook 'prog-mode-hook #'tagref-mode)
+#+end_src
+
+** Completion
+
+When =tagref-mode= is active, type =[ref:= or =[tag:= and invoke completion:
+
+| Key       | Action                          |
+|-----------+---------------------------------|
+| =C-M-i=   | Complete tag name               |
+| =M-TAB=   | Complete tag name (same)        |
+
+Completions show the tag name with its file location:
+
+#+begin_example
+polynomial_nonzero    src/math.rs:42
+path_default          src/main.rs:93
+#+end_example
+
+*Smart conversion:* When completing =[tag:= and you select an existing tag,
+the directive is automatically converted to =[ref:= to prevent duplicates.
+
+** Navigation
+
+Navigate between references and their definitions using standard xref keys:
+
+| Key   | Command                  | Action                        |
+|-------+--------------------------+-------------------------------|
+| =M-.= | =xref-find-definitions=  | Jump to tag definition        |
+| =M-,= | =xref-go-back=           | Return to previous location   |
+| =M-?= | =xref-find-references=   | Find references (if supported)|
+
+Place your cursor inside a =[ref:name]= or =[tag:name]= and press =M-.=
+to jump to where the tag is defined.
+
+** Validation
+
+Run tagref's validation to find broken references:
+
+#+begin_example
+M-x tagref-check
+#+end_example
+
+This opens a compilation buffer with any errors. Click on an error
+(or press =RET=) to jump to that location.
+
+Standard compilation-mode keys work:
+
+| Key       | Action              |
+|-----------+---------------------|
+| =RET=     | Go to error         |
+| =M-g M-n= | Next error          |
+| =M-g M-p= | Previous error      |
+| =g=       | Re-run check        |
+| =q=       | Close buffer        |
+
+** Tag Browser
+
+Browse all tags in the project:
+
+#+begin_example
+M-x tagref-list-tags
+#+end_example
+
+This shows a sortable table of all tags:
+
+#+begin_example
+Tag                                      File                                               Line
+polynomial_nonzero                       src/math.rs                                        42
+path_default                             src/main.rs                                        93
+tag_sigil_default                        src/main.rs                                        103
+#+end_example
+
+| Key   | Action                    |
+|-------+---------------------------|
+| =RET= | Jump to tag definition    |
+| =g=   | Refresh list              |
+| =S=   | Sort by column            |
+| =q=   | Close buffer              |
+
+* Configuration
+
+** Custom Variables
+
+#+begin_src emacs-lisp
+;; Path to tagref executable (default: "tagref")
+(setq tagref-executable "/path/to/tagref")
+
+;; Additional arguments for tagref commands
+(setq tagref-arguments '("--config" "custom.toml"))
+#+end_src
+
+** Customization Interface
+
+#+begin_example
+M-x customize-group RET tagref RET
+#+end_example
+
+* Commands
+
+| Command             | Description                                      |
+|---------------------+--------------------------------------------------|
+| =tagref-mode=       | Toggle tagref minor mode in current buffer       |
+| =tagref-check=      | Run tagref validation, show errors               |
+| =tagref-list-tags=  | Display all tags in a browsable buffer           |
+
+* Development
+
+** Running Tests
+
+#+begin_src shell
+cd emacs
+make test    # Run Buttercup test suite
+make check   # Run byte-compile, checkdoc, package-lint
+make all     # Run everything
+#+end_src
+
+** Project Structure
+
+#+begin_example
+emacs/
+├── Makefile           # Build and test commands
+├── README.org         # This file
+├── tagref.el          # Main package
+└── test/
+    └── tagref-test.el # Buttercup tests
+#+end_example
+
+* License
+
+GPL-3.0-or-later. See the [[file:tagref.el][source file]] for details.
