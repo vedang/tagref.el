@@ -217,13 +217,70 @@ Returns nil if not inside a directive."
                       compilation-error-regexp-alist-alist))
   (setq-local compilation-error-regexp-alist '(tagref-error)))
 
-;;;; Tag Listing (stub)
+;;;; Tag Listing
+
+(defvar-local tagref-list--tags nil
+  "Cache of tags for the current listing buffer.")
+
+(defvar tagref-list-mode-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map tabulated-list-mode-map)
+    (define-key map (kbd "RET") #'tagref-list-goto-tag)
+    (define-key map (kbd "g") #'tagref-list-refresh)
+    (define-key map (kbd "q") #'quit-window)
+    map)
+  "Keymap for `tagref-list-mode'.")
+
+(define-derived-mode tagref-list-mode tabulated-list-mode "Tagref-List"
+  "Major mode for displaying tagref tags."
+  (setq tabulated-list-format [("Tag" 40 t)
+                               ("File" 50 t)
+                               ("Line" 6 t)])
+  (setq tabulated-list-sort-key '("Tag" . nil))
+  (setq tabulated-list-padding 2)
+  (tabulated-list-init-header))
+
+(defun tagref-list--make-entries (tags)
+  "Convert TAGS alist to tabulated-list entries."
+  (mapcar (lambda (tag)
+            (let ((name (car tag))
+                  (file (cadr tag))
+                  (line (cddr tag)))
+              (list name (vector name file (number-to-string line)))))
+          tags))
+
+(defun tagref-list-refresh ()
+  "Refresh the tag listing."
+  (interactive)
+  (let ((tags (tagref--get-tags)))
+    (setq tagref-list--tags tags)
+    (setq tabulated-list-entries (tagref-list--make-entries tags))
+    (tabulated-list-print t)))
+
+(defun tagref-list-goto-tag ()
+  "Go to the tag at point."
+  (interactive)
+  (when-let* ((entry (tabulated-list-get-entry))
+              (name (aref entry 0))
+              (info (assoc name tagref-list--tags))
+              (file (cadr info))
+              (line (cddr info))
+              (root (tagref--project-root))
+              (full-path (expand-file-name file root)))
+    (find-file full-path)
+    (goto-char (point-min))
+    (forward-line (1- line))))
 
 ;;;###autoload
 (defun tagref-list-tags ()
   "Display a list of all tags in the project."
   (interactive)
-  (message "Not yet implemented"))
+  (let ((root (tagref--project-root)))
+    (with-current-buffer (get-buffer-create "*tagref-tags*")
+      (let ((default-directory root))
+        (tagref-list-mode)
+        (tagref-list-refresh)
+        (pop-to-buffer (current-buffer))))))
 
 ;;;; Minor Mode
 
