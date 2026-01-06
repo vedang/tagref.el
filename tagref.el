@@ -147,11 +147,48 @@ Returns nil if not inside a directive."
                         (when (re-search-backward "\\[tag:" (line-beginning-position) t)
                           (replace-match "[ref:"))))))))))))
 
-;;;; Xref Backend (stub)
+;;;; Xref Backend
 
 (defun tagref--xref-backend ()
   "Return the tagref xref backend if in `tagref-mode'."
-  nil)
+  (when tagref-mode
+    'tagref))
+
+(defun tagref--identifier-at-point ()
+  "Return the tag name at point if inside a directive."
+  (save-excursion
+    (let ((pt (point))
+          (line-beg (line-beginning-position))
+          (line-end (line-end-position)))
+      ;; Search backward for opening bracket
+      (when (re-search-backward "\\[\\(tag\\|ref\\):" line-beg t)
+        (let ((name-start (match-end 0)))
+          ;; Find closing bracket
+          (when (re-search-forward "\\]" line-end t)
+            (let ((name-end (1- (point))))
+              ;; Check if original point was within the name
+              (when (and (>= pt name-start) (<= pt name-end))
+                (string-trim (buffer-substring-no-properties
+                              name-start name-end))))))))))
+
+(cl-defmethod xref-backend-identifier-at-point ((_backend (eql tagref)))
+  "Return identifier at point for tagref backend."
+  (tagref--identifier-at-point))
+
+(cl-defmethod xref-backend-definitions ((_backend (eql tagref)) identifier)
+  "Return xref definitions for IDENTIFIER."
+  (let ((tags (tagref--get-tags))
+        (root (tagref--project-root)))
+    (when-let ((info (assoc identifier tags)))
+      (let* ((file (cadr info))
+             (line (cddr info))
+             (full-path (expand-file-name file root)))
+        (list (xref-make identifier
+                         (xref-make-file-location full-path line 0)))))))
+
+(cl-defmethod xref-backend-identifier-completion-table ((_backend (eql tagref)))
+  "Return completion table for tagref identifiers."
+  (mapcar #'car (tagref--get-tags)))
 
 ;;;; Commands (stubs)
 

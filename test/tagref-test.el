@@ -122,6 +122,33 @@
       (goto-char 15)  ; in "more text"
       (expect (tagref--directive-at-point) :to-be nil))))
 
+;;; Identifier at Point Tests
+
+(describe "tagref--identifier-at-point"
+  (it "extracts tag name from ref"
+    (with-temp-buffer
+      (insert "[ref:my_tag]")
+      (goto-char 8)
+      (expect (tagref--identifier-at-point) :to-equal "my_tag")))
+
+  (it "extracts tag name from tag"
+    (with-temp-buffer
+      (insert "[tag:another_tag]")
+      (goto-char 10)
+      (expect (tagref--identifier-at-point) :to-equal "another_tag")))
+
+  (it "trims whitespace"
+    (with-temp-buffer
+      (insert "[ref: spaced_tag ]")
+      (goto-char 10)
+      (expect (tagref--identifier-at-point) :to-equal "spaced_tag")))
+
+  (it "returns nil outside directive"
+    (with-temp-buffer
+      (insert "regular text")
+      (goto-char 5)
+      (expect (tagref--identifier-at-point) :to-be nil))))
+
 ;;; Command Tests
 
 (describe "tagref-check"
