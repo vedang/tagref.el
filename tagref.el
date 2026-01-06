@@ -104,15 +104,56 @@ Returns an alist of (NAME . (FILE . LINE-NUMBER))."
     (delq nil (mapcar #'tagref--parse-tag-line
                       (split-string output "\n" t)))))
 
-;;;; Stub Functions
+;;;; Completion
+
+(defun tagref--directive-at-point ()
+  "Return directive info if point is inside a tagref directive.
+Returns (TYPE BEG END PREFIX) where:
+- TYPE is \"tag\" or \"ref\"
+- BEG is the start of the tag name (after colon)
+- END is point
+- PREFIX is the text between colon and point
+Returns nil if not inside a directive."
+  (save-excursion
+    (let ((pt (point))
+          (line-beg (line-beginning-position)))
+      (when (re-search-backward "\\[\\(tag\\|ref\\):" line-beg t)
+        (let* ((type (match-string 1))
+               (beg (match-end 0))
+               (prefix (buffer-substring-no-properties beg pt)))
+          ;; Only match if we haven't passed the closing bracket
+          (unless (string-match-p "]" prefix)
+            (list type beg pt prefix)))))))
 
 (defun tagref--capf ()
   "Completion-at-point function for tagref directives."
-  nil)
+  (when-let ((directive (tagref--directive-at-point)))
+    (pcase-let ((`(,type ,beg ,end ,_prefix) directive))
+      (let ((tags (tagref--get-tags)))
+        (when tags
+          (list beg end
+                (mapcar #'car tags)
+                :exclusive 'no
+                :annotation-function
+                (lambda (candidate)
+                  (when-let ((info (assoc candidate tags)))
+                    (format " %s:%d" (cadr info) (cddr info))))
+                :exit-function
+                (when (string= type "tag")
+                  (lambda (_candidate status)
+                    (when (eq status 'finished)
+                      ;; Convert [tag: to [ref: if user selected existing tag
+                      (save-excursion
+                        (when (re-search-backward "\\[tag:" (line-beginning-position) t)
+                          (replace-match "[ref:"))))))))))))
+
+;;;; Xref Backend (stub)
 
 (defun tagref--xref-backend ()
   "Return the tagref xref backend if in `tagref-mode'."
   nil)
+
+;;;; Commands (stubs)
 
 ;;;###autoload
 (defun tagref-check ()

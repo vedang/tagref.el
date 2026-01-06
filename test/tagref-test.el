@@ -91,6 +91,37 @@
     (expect (tagref--parse-tag-line "not a tag line") :to-be nil)
     (expect (tagref--parse-tag-line "") :to-be nil)))
 
+;;; Directive Detection Tests
+
+(describe "tagref--directive-at-point"
+  (it "detects ref directive"
+    (with-temp-buffer
+      (insert "[ref:my_tag]")
+      (goto-char 8)  ; inside "my_tag"
+      (let ((result (tagref--directive-at-point)))
+        (expect result :not :to-be nil)
+        (expect (nth 0 result) :to-equal "ref"))))
+
+  (it "detects tag directive"
+    (with-temp-buffer
+      (insert "[tag:my_tag]")
+      (goto-char 8)
+      (let ((result (tagref--directive-at-point)))
+        (expect result :not :to-be nil)
+        (expect (nth 0 result) :to-equal "tag"))))
+
+  (it "returns nil outside directive"
+    (with-temp-buffer
+      (insert "some text")
+      (goto-char 5)
+      (expect (tagref--directive-at-point) :to-be nil)))
+
+  (it "returns nil after closing bracket"
+    (with-temp-buffer
+      (insert "[ref:my_tag] more text")
+      (goto-char 15)  ; in "more text"
+      (expect (tagref--directive-at-point) :to-be nil))))
+
 ;;; Command Tests
 
 (describe "tagref-check"
