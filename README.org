@@ -58,16 +58,52 @@ Add the =emacs/= directory to your load path:
 
 ** Enabling the Mode
 
+*** Per-buffer
+
 Enable =tagref-mode= in any buffer:
 
 #+begin_example
 M-x tagref-mode
 #+end_example
 
-Or add it to a mode hook:
+*** Globally for programming modes
+
+Add it to a mode hook in your init file:
 
 #+begin_src emacs-lisp
 (add-hook 'prog-mode-hook #'tagref-mode)
+#+end_src
+
+*** Per-project using dir-locals
+
+Create a =.dir-locals.el= file in your project root:
+
+#+begin_src emacs-lisp
+;;; Directory Local Variables
+;;; For more information see (info "(emacs) Directory Variables")
+
+((nil . ((eval . (tagref-mode 1)))))
+#+end_src
+
+Or for specific modes only:
+
+#+begin_src emacs-lisp
+((prog-mode . ((eval . (tagref-mode 1))))
+ (text-mode . ((eval . (tagref-mode 1)))))
+#+end_src
+
+*** Using project.el
+
+You can also use =project.el= hooks (Emacs 28+):
+
+#+begin_src emacs-lisp
+(defun my/enable-tagref-in-project ()
+  "Enable tagref-mode if project has tagref tags."
+  (when (and (project-current)
+             (executable-find "tagref"))
+    (tagref-mode 1)))
+
+(add-hook 'find-file-hook #'my/enable-tagref-in-project)
 #+end_src
 
 ** Completion
@@ -194,6 +230,42 @@ emacs/
 └── test/
     └── tagref-test.el # Buttercup tests
 #+end_example
+
+* Troubleshooting
+
+** Completion not appearing
+
+1. *Verify tagref-mode is active:* Check for " Tagref" in the mode line.
+
+2. *Verify tagref CLI works:* Run =M-x tagref-list-tags= to see if tags are found.
+   If this shows no tags, check that =tagref= is in your PATH.
+
+3. *Check CAPF is registered:*
+   #+begin_src emacs-lisp
+   (member 'tagref--capf completion-at-point-functions)
+   #+end_src
+
+4. *With Corfu/Company:* Completion should trigger automatically when you type
+   =​[ref:= or =​[tag:=. If not, manually invoke with =C-M-i= or =M-TAB=.
+
+5. *Debug the CAPF:* Evaluate this with point inside a =​[ref:= directive:
+   #+begin_src emacs-lisp
+   (tagref--capf)
+   #+end_src
+   It should return a list like =(START END CANDIDATES ...)=.
+
+** tagref-check shows no clickable errors
+
+The error regexp matches the format =@ path/to/file:42=. If your errors
+aren't clickable, check that tagref output matches this format.
+
+** Performance with large projects
+
+The package calls =tagref list-tags= on each completion. For very large
+projects, this may cause a delay. Consider:
+
+- Increasing =corfu-auto-delay= if using Corfu
+- Using =M-x tagref-list-tags= to browse tags instead
 
 * License
 

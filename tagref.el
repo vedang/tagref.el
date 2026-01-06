@@ -135,6 +135,7 @@ Returns nil if not inside a directive."
           (list beg end
                 (mapcar #'car tags)
                 :exclusive 'no
+                :category 'tagref-tag
                 :annotation-function
                 (lambda (candidate)
                   (when-let ((info (assoc candidate tags)))
@@ -195,7 +196,8 @@ Returns nil if not inside a directive."
 
 (defvar tagref-error-regexp-alist
   `((tagref-error
-     ,(rx "at " (group (+ (not ":"))) ":" (group (+ digit)))
+     ;; Matches: @ ./path/to/file.el:42 or @ path/to/file:42
+     ,(rx "@ " (group (+ (not ":"))) ":" (group (+ digit)))
      1 2 nil 2))
   "Compilation error regexp alist for tagref output.")
 
@@ -287,7 +289,8 @@ Returns nil if not inside a directive."
 
 (defun tagref--enable ()
   "Enable `tagref-mode' features."
-  (add-hook 'completion-at-point-functions #'tagref--capf nil t)
+  ;; Add at the front for higher priority
+  (add-hook 'completion-at-point-functions #'tagref--capf -90 t)
   (add-hook 'xref-backend-functions #'tagref--xref-backend nil t))
 
 (defun tagref--disable ()
