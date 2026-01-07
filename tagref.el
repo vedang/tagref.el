@@ -126,6 +126,23 @@ Returns an alist of (NAME . (FILE . LINE-NUMBER))."
     (delq nil (mapcar #'tagref--parse-tag-line
                       (split-string output "\n" t)))))
 
+(defun tagref--find-column-of-tag (file line tag-name)
+  "Find the column of [tag:TAG-NAME] in FILE at LINE.
+Returns the 0-based column, or 0 if not found."
+  (let ((root (tagref--project-root)))
+    (when root
+      (let ((full-path (expand-file-name file root)))
+        (when (file-exists-p full-path)
+          (with-temp-buffer
+            (insert-file-contents full-path)
+            (goto-char (point-min))
+            (forward-line (1- line))
+            (if (re-search-forward (format "\\[tag:%s\\]"
+                                           (regexp-quote tag-name))
+                                   (line-end-position) t)
+                (- (match-beginning 0) (line-beginning-position))
+              0)))))))
+
 ;;;; Font-lock
 
 (defvar tagref-font-lock-keywords
@@ -241,9 +258,10 @@ Returns nil if not inside a directive."
       (when-let ((info (assoc identifier tags)))
         (let* ((file (cadr info))
                (line (cddr info))
+               (col (or (tagref--find-column-of-tag file line identifier) 0))
                (full-path (expand-file-name file root)))
           (list (xref-make identifier
-                           (xref-make-file-location full-path line 0))))))))
+                           (xref-make-file-location full-path line col))))))))
 
 (cl-defmethod xref-backend-identifier-completion-table ((_backend (eql tagref)))
   "Return completion table for tagref identifiers."
