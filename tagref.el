@@ -361,13 +361,17 @@ the current project if not already enabled."
   "Keymap for `tagref-list-mode'.")
 
 (define-derived-mode tagref-list-mode tabulated-list-mode "Tagref-List"
-  "Major mode for displaying tagref tags."
+  "Major mode for displaying tagref tags.
+Supports `next-error' navigation with \\[next-error] and \\[previous-error]."
   (setq tabulated-list-format [("Tag" 40 t)
                                ("File" 50 t)
                                ("Line" 6 t)])
   (setq tabulated-list-sort-key '("Tag" . nil))
   (setq tabulated-list-padding 2)
-  (tabulated-list-init-header))
+  (tabulated-list-init-header)
+  ;; Enable next-error support
+  (setq-local next-error-function #'tagref-list-next-error)
+  (setq-local next-error-last-buffer (current-buffer)))
 
 (defun tagref-list--make-entries (tags)
   "Convert TAGS alist to tabulated-list entries."
@@ -398,13 +402,35 @@ the current project if not already enabled."
               (full-path (expand-file-name file root)))
     (find-file full-path)
     (goto-char (point-min))
-    (forward-line (1- line))))
+    (forward-line (1- line))
+    ;; Try to position at the tag itself
+    (when (re-search-forward (format "\\[tag:%s\\]" (regexp-quote name))
+                             (line-end-position) t)
+      (goto-char (match-beginning 0)))))
+
+(defun tagref-list-next-error (n &optional reset)
+  "Move to the Nth next tag in the list and visit it.
+This function is used by `next-error' and `previous-error'.
+If RESET is non-nil, go to the first tag."
+  (interactive "p")
+  (when reset
+    (goto-char (point-min))
+    (forward-line 2))  ; Skip header
+  (forward-line n)
+  ;; Ensure we're on a valid entry
+  (when (eobp)
+    (forward-line -1))
+  (when (< (line-number-at-pos) 3)
+    (goto-char (point-min))
+    (forward-line 2))
+  (tagref-list-goto-tag))
 
 ;;;###autoload
 (defun tagref-list-tags ()
   "Display a list of all tags in the project.
 This command is project-aware and will enable `tagref-mode' for
-the current project if not already enabled."
+the current project if not already enabled.
+The resulting buffer supports `next-error' navigation."
   (interactive)
   (unless (tagref--project-root)
     (user-error "Not in a project"))
@@ -414,7 +440,9 @@ the current project if not already enabled."
       (let ((default-directory root))
         (tagref-list-mode)
         (tagref-list-refresh)
-        (pop-to-buffer (current-buffer))))))
+        (pop-to-buffer (current-buffer))
+        ;; Register as next-error source
+        (setq next-error-last-buffer (current-buffer))))))
 
 ;;;; Minor Mode
 
