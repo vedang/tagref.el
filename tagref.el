@@ -252,16 +252,30 @@ Returns nil if not inside a directive."
   (tagref--identifier-at-point))
 
 (cl-defmethod xref-backend-definitions ((_backend (eql tagref)) identifier)
-  "Return xref definitions for IDENTIFIER."
+  "Return xref definitions for IDENTIFIER.
+If point is on a [ref:...], returns the tag definition.
+If point is on a [tag:...], returns all references to that tag."
   (when-let ((root (tagref--project-root)))
-    (let ((tags (tagref--get-tags)))
-      (when-let ((info (assoc identifier tags)))
-        (let* ((file (cadr info))
-               (line (cddr info))
-               (col (or (tagref--find-column-of-tag file line identifier) 0))
-               (full-path (expand-file-name file root)))
-          (list (xref-make identifier
-                           (xref-make-file-location full-path line col))))))))
+    (let ((directive-type (tagref--directive-type-at-point)))
+      (if (string= directive-type "tag")
+          ;; On a tag: show all refs as "definitions" (where it's used)
+          (let ((refs (tagref--find-refs identifier)))
+            (mapcar (lambda (ref)
+                      (let* ((file (car ref))
+                             (line (cdr ref))
+                             (full-path (expand-file-name file root)))
+                        (xref-make (format "[ref:%s]" identifier)
+                                   (xref-make-file-location full-path line 0))))
+                    refs))
+        ;; On a ref (or elsewhere): show tag definition
+        (let ((tags (tagref--get-tags)))
+          (when-let ((info (assoc identifier tags)))
+            (let* ((file (cadr info))
+                   (line (cddr info))
+                   (col (or (tagref--find-column-of-tag file line identifier) 0))
+                   (full-path (expand-file-name file root)))
+              (list (xref-make identifier
+                               (xref-make-file-location full-path line col))))))))))
 
 (cl-defmethod xref-backend-identifier-completion-table ((_backend (eql tagref)))
   "Return completion table for tagref identifiers."
