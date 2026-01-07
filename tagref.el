@@ -78,6 +78,9 @@
 
 ;;;; Project tracking
 
+;; Forward declaration for byte-compiler
+(defvar tagref-mode)
+
 (defvar tagref--enabled-projects (make-hash-table :test 'equal)
   "Hash table of project roots where `tagref-mode' is enabled.")
 
@@ -340,6 +343,7 @@ the current project if not already enabled."
 (defun tagref--enable-in-buffer ()
   "Enable tagref features in the current buffer if in an enabled project."
   (when (tagref--in-enabled-project-p)
+    (setq tagref-mode t)
     (tagref--enable-font-lock)
     ;; Add completion and xref hooks
     (add-hook 'completion-at-point-functions #'tagref-completion-at-point -90 t)
@@ -347,6 +351,7 @@ the current project if not already enabled."
 
 (defun tagref--disable-in-buffer ()
   "Disable tagref features in the current buffer."
+  (setq tagref-mode nil)
   (tagref--disable-font-lock)
   (remove-hook 'completion-at-point-functions #'tagref-completion-at-point t)
   (remove-hook 'xref-backend-functions #'tagref--xref-backend t))
