@@ -37,33 +37,39 @@
 (describe "tagref-mode"
   (it "can be enabled in a buffer"
     (with-temp-buffer
+      (emacs-lisp-mode)  ; Use a prog-mode derivative
       (tagref-mode 1)
       (expect tagref-mode :to-be t)))
 
   (it "can be disabled in a buffer"
     (with-temp-buffer
+      (emacs-lisp-mode)
       (tagref-mode 1)
       (tagref-mode -1)
       (expect tagref-mode :to-be nil)))
 
   (it "adds capf to completion-at-point-functions when enabled"
     (with-temp-buffer
+      (emacs-lisp-mode)
       (tagref-mode 1)
       (expect (memq 'tagref-completion-at-point completion-at-point-functions) :not :to-be nil)))
 
   (it "removes capf from completion-at-point-functions when disabled"
     (with-temp-buffer
+      (emacs-lisp-mode)
       (tagref-mode 1)
       (tagref-mode -1)
       (expect (memq 'tagref-completion-at-point completion-at-point-functions) :to-be nil)))
 
   (it "adds xref backend when enabled"
     (with-temp-buffer
+      (emacs-lisp-mode)
       (tagref-mode 1)
       (expect (memq 'tagref--xref-backend xref-backend-functions) :not :to-be nil)))
 
   (it "removes xref backend when disabled"
     (with-temp-buffer
+      (emacs-lisp-mode)
       (tagref-mode 1)
       (tagref-mode -1)
       (expect (memq 'tagref--xref-backend xref-backend-functions) :to-be nil))))

@@ -342,7 +342,10 @@ the current project if not already enabled."
 
 (defun tagref--enable-in-buffer ()
   "Enable tagref features in the current buffer if in an enabled project."
-  (when (tagref--in-enabled-project-p)
+  (when (and (tagref--in-enabled-project-p)
+             ;; Only enable in programming/text modes to avoid slowing
+             ;; down search buffers and other special buffers
+             (derived-mode-p 'prog-mode 'text-mode 'conf-mode))
     (setq tagref-mode t)
     (tagref--enable-font-lock)
     ;; Add completion and xref hooks
