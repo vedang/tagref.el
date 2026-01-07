@@ -1,12 +1,14 @@
 #+TITLE: tagref.el
-#+AUTHOR: Tagref Contributors
+#+AUTHOR: Vedang Manerikar
 #+OPTIONS: toc:2
 
-Emacs integration for [[https://github.com/stepchowfun/tagref][tagref]], a tool for managing cross-references in code.
+Emacs integration for [[https://github.com/stepchowfun/tagref][tagref]], a tool for managing cross-references in
+code.
 
 * Overview
 
-Tagref helps you maintain cross-references in your codebase using simple tags:
+Tagref helps you maintain cross-references in your codebase using
+simple tags:
 
 - =[tag:name]= defines a tag
 - =[ref:name]= references a tag
@@ -16,7 +18,8 @@ Tagref helps you maintain cross-references in your codebase using simple tags:
 This package provides Emacs support for working with these directives:
 
 - *Completion* for =[ref:]= and =[tag:]= with existing tag names
-- *Navigation* via =M-.= to jump from a reference to its tag definition
+- *Navigation* via =M-.= to jump from a reference to its tag
+  definition
 - *Validation* via =M-x tagref-check= with clickable error locations
 - *Browsing* via =M-x tagref-list-tags= to see all tags in the project
 
@@ -29,10 +32,8 @@ This package provides Emacs support for working with these directives:
 
 ** Manual Installation
 
-Add the =emacs/= directory to your load path:
-
 #+begin_src emacs-lisp
-(add-to-list 'load-path "/path/to/tagref/emacs")
+(add-to-list 'load-path "/path/to/tagref.el")
 (require 'tagref)
 #+end_src
 
@@ -40,7 +41,7 @@ Add the =emacs/= directory to your load path:
 
 #+begin_src emacs-lisp
 (use-package tagref
-  :load-path "/path/to/tagref/emacs"
+  :ensure t
   :hook (prog-mode . tagref-mode))
 #+end_src
 
@@ -50,8 +51,7 @@ Add the =emacs/= directory to your load path:
 (straight-use-package
  '(tagref :type git
           :host github
-          :repo "stepchowfun/tagref"
-          :files ("emacs/*.el")))
+          :repo "vedang/tagref.el"))
 #+end_src
 
 * Usage
@@ -108,7 +108,8 @@ You can also use =project.el= hooks (Emacs 28+):
 
 ** Completion
 
-When =tagref-mode= is active, type =[ref:= or =[tag:= and invoke completion:
+When =tagref-mode= is active, type =[ref:= or =[tag:= and invoke
+completion:
 
 | Key       | Action                          |
 |-----------+---------------------------------|
@@ -122,12 +123,14 @@ polynomial_nonzero    src/math.rs:42
 path_default          src/main.rs:93
 #+end_example
 
-*Smart conversion:* When completing =[tag:= and you select an existing tag,
-the directive is automatically converted to =[ref:= to prevent duplicates.
+*Smart conversion:* When completing =[tag:= and you select an existing
+tag, the directive is automatically converted to =[ref:= to prevent
+duplicates.
 
 ** Navigation
 
-Navigate between references and their definitions using standard xref keys:
+Navigate between references and their definitions using standard xref
+keys:
 
 | Key   | Command                  | Action                        |
 |-------+--------------------------+-------------------------------|
@@ -242,15 +245,14 @@ emacs/
 
 3. *Check CAPF is registered:*
    #+begin_src emacs-lisp
-   (member 'tagref--capf completion-at-point-functions)
+   (member 'tagref-completion-at-point completion-at-point-functions)
    #+end_src
 
 4. *With Corfu/Company:* Completion should trigger automatically when you type
    =​[ref:= or =​[tag:=. If not, manually invoke with =C-M-i= or =M-TAB=.
-
 5. *Debug the CAPF:* Evaluate this with point inside a =​[ref:= directive:
    #+begin_src emacs-lisp
-   (tagref--capf)
+   (tagref-completion-at-point)
    #+end_src
    It should return a list like =(START END CANDIDATES ...)=.
 
