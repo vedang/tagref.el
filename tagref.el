@@ -267,6 +267,38 @@ Returns nil if not inside a directive."
   "Return completion table for tagref identifiers."
   (mapcar #'car (tagref--get-tags)))
 
+(defun tagref--find-refs (tag-name)
+  "Find all references to TAG-NAME in the project.
+Returns a list of (FILE . LINE-NUMBER) pairs."
+  (when-let ((root (tagref--project-root)))
+    (let ((default-directory root)
+          results)
+      (with-temp-buffer
+        ;; Use grep to find refs
+        (let ((exit-code (call-process "grep" nil t nil
+                                       "-rn" "--include=*"
+                                       (format "\\[ref:%s\\]" tag-name)
+                                       ".")))
+          (when (zerop exit-code)
+            (goto-char (point-min))
+            (while (re-search-forward "^\\./\\([^:]+\\):\\([0-9]+\\):" nil t)
+              (push (cons (match-string 1)
+                          (string-to-number (match-string 2)))
+                    results)))))
+      (nreverse results))))
+
+(cl-defmethod xref-backend-references ((_backend (eql tagref)) identifier)
+  "Return xref references for IDENTIFIER (places where it is referenced)."
+  (when-let ((root (tagref--project-root)))
+    (let ((refs (tagref--find-refs identifier)))
+      (mapcar (lambda (ref)
+                (let* ((file (car ref))
+                       (line (cdr ref))
+                       (full-path (expand-file-name file root)))
+                  (xref-make (format "[ref:%s]" identifier)
+                             (xref-make-file-location full-path line 0))))
+              refs))))
+
 ;;;; Check Command
 
 (defvar tagref-error-regexp-alist
