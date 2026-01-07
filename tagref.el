@@ -94,6 +94,10 @@
   (when-let ((root (tagref--project-root)))
     (gethash root tagref--enabled-projects)))
 
+(defun tagref--in-git-repo-p ()
+  "Return non-nil if `default-directory' is in a git repository."
+  (locate-dominating-file default-directory ".git"))
+
 ;;;; Utilities
 
 (defun tagref--call-process (&rest args)
@@ -201,10 +205,13 @@ Returns nil if not inside a directive."
                     (when-let ((info (assoc candidate tags)))
                       (format " %s:%d" (cadr info) (cddr info))))
                   :exit-function
-                  (when (string= type "tag")
-                    (lambda (_candidate status)
-                      (when (eq status 'finished)
-                        ;; Convert [tag: to [ref: if user selected existing tag
+                  (lambda (_candidate status)
+                    (when (eq status 'finished)
+                      ;; Insert closing bracket if not already present
+                      (unless (looking-at-p "\\]")
+                        (insert "]"))
+                      ;; Convert [tag: to [ref: if user selected existing tag
+                      (when (string= type "tag")
                         (save-excursion
                           (when (re-search-backward "\\[tag:" (line-beginning-position) t)
                             (replace-match "[ref:")))))))))))))
@@ -253,20 +260,15 @@ Returns nil if not inside a directive."
 
 (cl-defmethod xref-backend-definitions ((_backend (eql tagref)) identifier)
   "Return xref definitions for IDENTIFIER.
-If point is on a [ref:...], returns the tag definition.
-If point is on a [tag:...], returns all references to that tag."
+On a [ref:...], jumps to the tag definition.
+On a [tag:...], shows a message suggesting M-? instead."
   (when-let ((root (tagref--project-root)))
     (let ((directive-type (tagref--directive-type-at-point)))
       (if (string= directive-type "tag")
-          ;; On a tag: show all refs as "definitions" (where it's used)
-          (let ((refs (tagref--find-refs identifier)))
-            (mapcar (lambda (ref)
-                      (let* ((file (car ref))
-                             (line (cdr ref))
-                             (full-path (expand-file-name file root)))
-                        (xref-make (format "[ref:%s]" identifier)
-                                   (xref-make-file-location full-path line 0))))
-                    refs))
+          ;; On a tag: suggest using M-? to find references
+          (progn
+            (message "This is a tag definition. Use M-? to find references.")
+            nil)
         ;; On a ref (or elsewhere): show tag definition
         (let ((tags (tagref--get-tags)))
           (when-let ((info (assoc identifier tags)))
@@ -283,19 +285,29 @@ If point is on a [tag:...], returns all references to that tag."
 
 (defun tagref--find-refs (tag-name)
   "Find all references to TAG-NAME in the project.
-Returns a list of (FILE . LINE-NUMBER) pairs."
+Returns a list of (FILE . LINE-NUMBER) pairs.
+Uses git grep when available for better performance."
   (when-let ((root (tagref--project-root)))
     (let ((default-directory root)
+          (pattern (format "\\[ref:%s\\]" tag-name))
           results)
       (with-temp-buffer
-        ;; Use grep to find refs
-        (let ((exit-code (call-process "grep" nil t nil
-                                       "-rn" "--include=*"
-                                       (format "\\[ref:%s\\]" tag-name)
-                                       ".")))
+        (let ((exit-code
+               (if (tagref--in-git-repo-p)
+                   ;; Use git grep for speed (respects .gitignore)
+                   (call-process "git" nil t nil
+                                 "grep" "-n" "--fixed-strings"
+                                 (format "[ref:%s]" tag-name))
+                 ;; Fall back to grep
+                 (call-process "grep" nil t nil
+                               "-rn" "--include=*" pattern "."))))
           (when (zerop exit-code)
             (goto-char (point-min))
-            (while (re-search-forward "^\\./\\([^:]+\\):\\([0-9]+\\):" nil t)
+            (while (re-search-forward
+                    (if (tagref--in-git-repo-p)
+                        "^\\([^:]+\\):\\([0-9]+\\):"
+                      "^\\./\\([^:]+\\):\\([0-9]+\\):")
+                    nil t)
               (push (cons (match-string 1)
                           (string-to-number (match-string 2)))
                     results)))))
