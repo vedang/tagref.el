@@ -5,7 +5,7 @@
 ;; Author: Tagref Contributors
 ;; Maintainer: Tagref Contributors
 ;; Version: 0.1.0
-;; Package-Requires: ((emacs "27.1"))
+;; Package-Requires: ((emacs "28.1"))
 ;; Keywords: tools, convenience
 ;; Homepage: https://github.com/stepchowfun/tagref
 
@@ -40,6 +40,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'project)
 (require 'xref)
 (require 'compile)
 (require 'tabulated-list)
@@ -100,27 +101,23 @@
 ;;;; Utilities
 
 (defun tagref--project-root ()
-  "Return the project root directory.
-Uses `project-root' if available, otherwise `default-directory'."
-  (or (when-let ((proj (project-current)))
-        (if (fboundp 'project-root)
-            (project-root proj)
-          ;; Emacs 27 compatibility
-          (with-no-warnings
-            (car (project-roots proj)))))
-      default-directory))
+  "Return the project root directory for the current buffer.
+Returns nil if not in a project."
+  (when-let ((proj (project-current)))
+    (project-root proj)))
 
 (defun tagref--call-process (&rest args)
   "Call tagref with ARGS and return output as string.
-Returns nil if tagref fails."
-  (let ((default-directory (tagref--project-root)))
-    (with-temp-buffer
-      (let ((exit-code (apply #'call-process
-                              tagref-executable
-                              nil t nil
-                              (append tagref-arguments args))))
-        (when (zerop exit-code)
-          (buffer-string))))))
+Returns nil if tagref fails or if not in a project."
+  (when-let ((root (tagref--project-root)))
+    (let ((default-directory root))
+      (with-temp-buffer
+        (let ((exit-code (apply #'call-process
+                                tagref-executable
+                                nil t nil
+                                (append tagref-arguments args))))
+          (when (zerop exit-code)
+            (buffer-string)))))))
 
 (defun tagref--parse-tag-line (line)
   "Parse a tagref `list-tags' output LINE.
