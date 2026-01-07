@@ -29,6 +29,7 @@
 ;; This package provides Emacs integration for tagref, a tool for managing
 ;; cross-references in code.  It provides:
 ;;
+;; - Font-lock highlighting for [tag:...] and [ref:...] directives
 ;; - Completion for [ref:] and [tag:] directives
 ;; - Xref integration for navigating to tag definitions (M-.)
 ;; - A check command that displays errors in a compilation buffer
@@ -59,6 +60,39 @@
   "Additional arguments passed to tagref commands."
   :type '(repeat string)
   :group 'tagref)
+
+;;;; Faces
+
+(defface tagref-tag-face
+  '((t :inherit font-lock-function-name-face :underline t))
+  "Face for tagref tag directives."
+  :group 'tagref)
+
+(defface tagref-ref-face
+  '((t :inherit font-lock-constant-face :underline t))
+  "Face for tagref ref directives."
+  :group 'tagref)
+
+;;;; Font-lock
+
+(defvar tagref-font-lock-keywords
+  `((,(rx "[tag:" (group (+ (not (any "]")))) "]")
+     (0 'tagref-tag-face t))
+    (,(rx "[ref:" (group (+ (not (any "]")))) "]")
+     (0 'tagref-ref-face t)))
+  "Font-lock keywords for tagref directives.")
+
+(defun tagref--enable-font-lock ()
+  "Enable font-lock for tagref directives in current buffer."
+  (font-lock-add-keywords nil tagref-font-lock-keywords)
+  (when font-lock-mode
+    (font-lock-flush)))
+
+(defun tagref--disable-font-lock ()
+  "Disable font-lock for tagref directives in current buffer."
+  (font-lock-remove-keywords nil tagref-font-lock-keywords)
+  (when font-lock-mode
+    (font-lock-flush)))
 
 ;; Forward declaration for byte-compiler
 (defvar tagref-mode)
@@ -289,12 +323,14 @@ Returns nil if not inside a directive."
 
 (defun tagref--enable ()
   "Enable `tagref-mode' features."
+  (tagref--enable-font-lock)
   ;; Add at the front for higher priority
   (add-hook 'completion-at-point-functions #'tagref--capf -90 t)
   (add-hook 'xref-backend-functions #'tagref--xref-backend nil t))
 
 (defun tagref--disable ()
   "Disable `tagref-mode' features."
+  (tagref--disable-font-lock)
   (remove-hook 'completion-at-point-functions #'tagref--capf t)
   (remove-hook 'xref-backend-functions #'tagref--xref-backend t))
 
@@ -303,6 +339,7 @@ Returns nil if not inside a directive."
   "Minor mode for tagref cross-reference support.
 
 When enabled, provides:
+- Font-lock highlighting for [tag:...] and [ref:...] directives
 - Completion for [ref:] and [tag:] directives
 - Xref integration for \\[xref-find-definitions] navigation to tag definitions
 - `tagref-check' command for validation

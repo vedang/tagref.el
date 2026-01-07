@@ -149,6 +149,19 @@
       (goto-char 5)
       (expect (tagref--identifier-at-point) :to-be nil))))
 
+;;; Font-lock Tests
+
+(describe "tagref font-lock"
+  (it "defines tagref-tag-face"
+    (expect (facep 'tagref-tag-face) :to-be-truthy))
+
+  (it "defines tagref-ref-face"
+    (expect (facep 'tagref-ref-face) :to-be-truthy))
+
+  (it "has font-lock keywords defined"
+    (expect tagref-font-lock-keywords :not :to-be nil)
+    (expect (length tagref-font-lock-keywords) :to-equal 2)))
+
 ;;; Command Tests
 
 (describe "tagref-check"
