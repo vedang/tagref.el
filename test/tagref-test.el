@@ -74,6 +74,17 @@
   (it "returns a directory"
     (expect (file-directory-p (tagref--project-root)) :to-be t)))
 
+(describe "tagref--in-enabled-project-p"
+  (it "returns nil when project is not enabled"
+    (let ((tagref--enabled-projects (make-hash-table :test 'equal)))
+      (expect (tagref--in-enabled-project-p) :to-be nil)))
+
+  (it "returns t when project is enabled"
+    (let ((tagref--enabled-projects (make-hash-table :test 'equal))
+          (root (tagref--project-root)))
+      (puthash root t tagref--enabled-projects)
+      (expect (tagref--in-enabled-project-p) :to-be t))))
+
 (describe "tagref--parse-tag-line"
   (it "parses valid tag line"
     (let ((result (tagref--parse-tag-line "[tag:my_tag] @ src/main.rs:42")))
