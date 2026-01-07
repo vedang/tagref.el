@@ -98,6 +98,15 @@
   "Return non-nil if `default-directory' is in a git repository."
   (locate-dominating-file default-directory ".git"))
 
+(defvar tagref--ripgrep-available 'unknown
+  "Cache for ripgrep availability check.  One of `unknown', t, or nil.")
+
+(defun tagref--ripgrep-available-p ()
+  "Return non-nil if ripgrep (rg) is available."
+  (when (eq tagref--ripgrep-available 'unknown)
+    (setq tagref--ripgrep-available (executable-find "rg")))
+  tagref--ripgrep-available)
+
 ;;;; Utilities
 
 (defun tagref--call-process (&rest args)
@@ -286,27 +295,39 @@ On a [tag:...], shows a message suggesting M-? instead."
 (defun tagref--find-refs (tag-name)
   "Find all references to TAG-NAME in the project.
 Returns a list of (FILE . LINE-NUMBER) pairs.
-Uses git grep when available for better performance."
+Uses ripgrep if available, then git grep in git repos, then grep."
   (when-let ((root (tagref--project-root)))
     (let ((default-directory root)
-          (pattern (format "\\[ref:%s\\]" tag-name))
+          (literal-pattern (format "[ref:%s]" tag-name))
+          (use-rg (tagref--ripgrep-available-p))
+          (use-git (tagref--in-git-repo-p))
           results)
       (with-temp-buffer
         (let ((exit-code
-               (if (tagref--in-git-repo-p)
-                   ;; Use git grep for speed (respects .gitignore)
-                   (call-process "git" nil t nil
-                                 "grep" "-n" "--fixed-strings"
-                                 (format "[ref:%s]" tag-name))
-                 ;; Fall back to grep
+               (cond
+                ;; Prefer ripgrep (fastest, respects .gitignore by default)
+                (use-rg
+                 (call-process "rg" nil t nil
+                               "--line-number" "--fixed-strings"
+                               "--no-heading" "--with-filename"
+                               literal-pattern))
+                ;; Git grep in git repos (fast, respects .gitignore)
+                (use-git
+                 (call-process "git" nil t nil
+                               "grep" "-n" "--fixed-strings"
+                               literal-pattern))
+                ;; Fall back to grep
+                (t
                  (call-process "grep" nil t nil
-                               "-rn" "--include=*" pattern "."))))
+                               "-rn" "--include=*"
+                               (format "\\[ref:%s\\]" tag-name) ".")))))
           (when (zerop exit-code)
             (goto-char (point-min))
             (while (re-search-forward
-                    (if (tagref--in-git-repo-p)
-                        "^\\([^:]+\\):\\([0-9]+\\):"
-                      "^\\./\\([^:]+\\):\\([0-9]+\\):")
+                    (cond
+                     (use-rg "^\\([^:]+\\):\\([0-9]+\\):")
+                     (use-git "^\\([^:]+\\):\\([0-9]+\\):")
+                     (t "^\\./\\([^:]+\\):\\([0-9]+\\):"))
                     nil t)
               (push (cons (match-string 1)
                           (string-to-number (match-string 2)))
