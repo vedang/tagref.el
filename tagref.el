@@ -160,7 +160,7 @@ Returns nil if not inside a directive."
           (unless (string-match-p "]" prefix)
             (list type beg pt prefix)))))))
 
-(defun tagref--capf ()
+(defun tagref-completion-at-point ()
   "Completion-at-point function for tagref directives."
   (when-let ((directive (tagref--directive-at-point)))
     (pcase-let ((`(,type ,beg ,end ,_prefix) directive))
@@ -325,13 +325,13 @@ Returns nil if not inside a directive."
   "Enable `tagref-mode' features."
   (tagref--enable-font-lock)
   ;; Add at the front for higher priority
-  (add-hook 'completion-at-point-functions #'tagref--capf -90 t)
+  (add-hook 'completion-at-point-functions #'tagref-completion-at-point -90 t)
   (add-hook 'xref-backend-functions #'tagref--xref-backend nil t))
 
 (defun tagref--disable ()
   "Disable `tagref-mode' features."
   (tagref--disable-font-lock)
-  (remove-hook 'completion-at-point-functions #'tagref--capf t)
+  (remove-hook 'completion-at-point-functions #'tagref-completion-at-point t)
   (remove-hook 'xref-backend-functions #'tagref--xref-backend t))
 
 ;;;###autoload

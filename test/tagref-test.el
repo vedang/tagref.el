@@ -49,13 +49,13 @@
   (it "adds capf to completion-at-point-functions when enabled"
     (with-temp-buffer
       (tagref-mode 1)
-      (expect (memq 'tagref--capf completion-at-point-functions) :not :to-be nil)))
+      (expect (memq 'tagref-completion-at-point completion-at-point-functions) :not :to-be nil)))
 
   (it "removes capf from completion-at-point-functions when disabled"
     (with-temp-buffer
       (tagref-mode 1)
       (tagref-mode -1)
-      (expect (memq 'tagref--capf completion-at-point-functions) :to-be nil)))
+      (expect (memq 'tagref-completion-at-point completion-at-point-functions) :to-be nil)))
 
   (it "adds xref backend when enabled"
     (with-temp-buffer
