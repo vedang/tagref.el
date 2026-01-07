@@ -199,6 +199,20 @@ Returns nil if not inside a directive."
   (when (tagref--in-enabled-project-p)
     'tagref))
 
+(defun tagref--directive-type-at-point ()
+  "Return the directive type at point (\"tag\" or \"ref\"), or nil."
+  (save-excursion
+    (let ((pt (point))
+          (line-beg (line-beginning-position))
+          (line-end (line-end-position)))
+      (when (re-search-backward "\\[\\(tag\\|ref\\):" line-beg t)
+        (let ((type (match-string 1))
+              (name-start (match-end 0)))
+          (when (re-search-forward "\\]" line-end t)
+            (let ((name-end (1- (point))))
+              (when (and (>= pt name-start) (<= pt name-end))
+                type))))))))
+
 (defun tagref--identifier-at-point ()
   "Return the tag name at point if inside a directive."
   (save-excursion

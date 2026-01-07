@@ -179,6 +179,27 @@
     (expect tagref-font-lock-keywords :not :to-be nil)
     (expect (length tagref-font-lock-keywords) :to-equal 2)))
 
+;;; Directive Type Tests
+
+(describe "tagref--directive-type-at-point"
+  (it "returns tag when on a tag directive"
+    (with-temp-buffer
+      (insert "[tag:my_tag]")
+      (goto-char 8)
+      (expect (tagref--directive-type-at-point) :to-equal "tag")))
+
+  (it "returns ref when on a ref directive"
+    (with-temp-buffer
+      (insert "[ref:my_tag]")
+      (goto-char 8)
+      (expect (tagref--directive-type-at-point) :to-equal "ref")))
+
+  (it "returns nil outside directive"
+    (with-temp-buffer
+      (insert "some text")
+      (goto-char 5)
+      (expect (tagref--directive-type-at-point) :to-be nil))))
+
 ;;; Command Tests
 
 (describe "tagref-check"
