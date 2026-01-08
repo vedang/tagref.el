@@ -334,30 +334,34 @@ Uses ripgrep if available, then git grep in git repos, then grep."
 (cl-defmethod xref-backend-references ((_backend (eql tagref)) identifier)
   "Return xref references for IDENTIFIER (places where it is referenced).
 When called from a [tag:...] directive, includes the tag definition
-as the first entry to provide context."
+as the first entry to provide context.  Shows a message if there are
+no references."
   (when-let ((root (tagref--project-root)))
     (let* ((refs (tagref--find-refs identifier))
-           (ref-xrefs (mapcar (lambda (ref)
-                                (let* ((file (car ref))
-                                       (line (cdr ref))
-                                       (full-path (expand-file-name file root)))
-                                  (xref-make (format "[ref:%s]" identifier)
-                                             (xref-make-file-location full-path line 0))))
-                              refs))
-           ;; When on a tag, include the tag definition as first entry
-           (on-tag-p (string= (tagref--directive-type-at-point) "tag"))
-           (tag-xref (when on-tag-p
-                       (when-let* ((tags (tagref--get-tags))
-                                   (info (assoc identifier tags)))
-                         (let* ((file (cadr info))
-                                (line (cddr info))
-                                (col (or (tagref--find-column-of-tag file line identifier) 0))
-                                (full-path (expand-file-name file root)))
-                           (xref-make (format "[tag:%s] (definition)" identifier)
-                                      (xref-make-file-location full-path line col)))))))
-      (if tag-xref
-          (cons tag-xref ref-xrefs)
-        ref-xrefs))))
+           (on-tag-p (string= (tagref--directive-type-at-point) "tag")))
+      ;; When on a tag with no references, show helpful message
+      (when (and on-tag-p (null refs))
+        (user-error "No references found for [tag:%s]" identifier))
+      (let* ((ref-xrefs (mapcar (lambda (ref)
+                                  (let* ((file (car ref))
+                                         (line (cdr ref))
+                                         (full-path (expand-file-name file root)))
+                                    (xref-make (format "[ref:%s]" identifier)
+                                               (xref-make-file-location full-path line 0))))
+                                refs))
+             ;; When on a tag, include the tag definition as first entry
+             (tag-xref (when on-tag-p
+                         (when-let* ((tags (tagref--get-tags))
+                                     (info (assoc identifier tags)))
+                           (let* ((file (cadr info))
+                                  (line (cddr info))
+                                  (col (or (tagref--find-column-of-tag file line identifier) 0))
+                                  (full-path (expand-file-name file root)))
+                             (xref-make (format "[tag:%s] (definition)" identifier)
+                                        (xref-make-file-location full-path line col)))))))
+        (if tag-xref
+            (cons tag-xref ref-xrefs)
+          ref-xrefs)))))
 
 ;;;; Check Command
 
