@@ -12,8 +12,6 @@ simple tags:
 
 - =[tag:name]= defines a tag
 - =[ref:name]= references a tag
-- =[file:path]= references a file
-- =[dir:path]= references a directory
 
 This package provides Emacs support for working with these directives:
 
@@ -27,7 +25,7 @@ This package provides Emacs support for working with these directives:
 
 ** Requirements
 
-- Emacs 27.1 or later
+- Emacs 28.1 or later
 - [[https://github.com/stepchowfun/tagref][tagref]] CLI installed and available in your =PATH=
 
 ** Manual Installation
@@ -136,10 +134,14 @@ keys:
 |-------+--------------------------+-------------------------------|
 | =M-.= | =xref-find-definitions=  | Jump to tag definition        |
 | =M-,= | =xref-go-back=           | Return to previous location   |
-| =M-?= | =xref-find-references=   | Find references (if supported)|
+| =M-?= | =xref-find-references=   | Find all references to tag    |
 
-Place your cursor inside a =[ref:name]= or =[tag:name]= and press =M-.=
-to jump to where the tag is defined.
+Place your cursor inside a =[ref:name]= and press =M-.= to jump to
+where the tag is defined.
+
+When on a =[tag:name]=, press =M-?= to find all references. The
+results include the tag definition as the first entry for context. If
+there are no references, a message is shown.
 
 ** Validation
 
@@ -208,7 +210,7 @@ M-x customize-group RET tagref RET
 
 | Command             | Description                                      |
 |---------------------+--------------------------------------------------|
-| =tagref-mode=       | Toggle tagref minor mode in current buffer       |
+| =tagref-mode=       | Toggle tagref minor mode for the current project |
 | =tagref-check=      | Run tagref validation, show errors               |
 | =tagref-list-tags=  | Display all tags in a browsable buffer           |
 
@@ -217,7 +219,6 @@ M-x customize-group RET tagref RET
 ** Running Tests
 
 #+begin_src shell
-cd emacs
 make test    # Run Buttercup test suite
 make check   # Run byte-compile, checkdoc, package-lint
 make all     # Run everything
@@ -226,7 +227,6 @@ make all     # Run everything
 ** Project Structure
 
 #+begin_example
-emacs/
 ├── Makefile           # Build and test commands
 ├── README.org         # This file
 ├── tagref.el          # Main package
