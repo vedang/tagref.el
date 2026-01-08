@@ -46,6 +46,7 @@
 (require 'xref)
 (require 'compile)
 (require 'tabulated-list)
+(require 'ansi-color)
 
 ;;;; Customization
 
@@ -388,7 +389,9 @@ the current project if not already enabled."
   (setq-local compilation-error-regexp-alist-alist
               (append tagref-error-regexp-alist
                       compilation-error-regexp-alist-alist))
-  (setq-local compilation-error-regexp-alist '(tagref-error)))
+  (setq-local compilation-error-regexp-alist '(tagref-error))
+  ;; Enable ANSI color interpretation for tagref's colored output
+  (add-hook 'compilation-filter-hook #'ansi-color-compilation-filter nil t))
 
 ;;;; Tag Listing
 
