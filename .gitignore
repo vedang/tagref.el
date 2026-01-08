@@ -1,0 +1,5 @@
+# Byte-compiled files
+*.elc
+
+# Test dependencies
+.deps/
