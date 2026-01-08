@@ -17,9 +17,11 @@ This package provides Emacs support for working with these directives:
 
 - *Completion* for =[ref:]= and =[tag:]= with existing tag names
 - *Navigation* via =M-.= to jump from a reference to its tag
-  definition
+  definition, and =M-?= to find all references of a tag
 - *Validation* via =M-x tagref-check= with clickable error locations
 - *Browsing* via =M-x tagref-list-tags= to see all tags in the project
+
+[[file:images/tagref.png]]
 
 * Installation
 
@@ -56,53 +58,14 @@ This package provides Emacs support for working with these directives:
 
 ** Enabling the Mode
 
-*** Per-buffer
-
 Enable =tagref-mode= in any buffer:
 
 #+begin_example
 M-x tagref-mode
 #+end_example
 
-*** Globally for programming modes
-
-Add it to a mode hook in your init file:
-
-#+begin_src emacs-lisp
-(add-hook 'prog-mode-hook #'tagref-mode)
-#+end_src
-
-*** Per-project using dir-locals
-
-Create a =.dir-locals.el= file in your project root:
-
-#+begin_src emacs-lisp
-;;; Directory Local Variables
-;;; For more information see (info "(emacs) Directory Variables")
-
-((nil . ((eval . (tagref-mode 1)))))
-#+end_src
-
-Or for specific modes only:
-
-#+begin_src emacs-lisp
-((prog-mode . ((eval . (tagref-mode 1))))
- (text-mode . ((eval . (tagref-mode 1)))))
-#+end_src
-
-*** Using project.el
-
-You can also use =project.el= hooks (Emacs 28+):
-
-#+begin_src emacs-lisp
-(defun my/enable-tagref-in-project ()
-  "Enable tagref-mode if project has tagref tags."
-  (when (and (project-current)
-             (executable-find "tagref"))
-    (tagref-mode 1)))
-
-(add-hook 'find-file-hook #'my/enable-tagref-in-project)
-#+end_src
+=tagref-mode= understands projects as defined by =project.el= and will
+be turned on for all buffers of that project.
 
 ** Completion
 
@@ -250,6 +213,7 @@ make all     # Run everything
 
 4. *With Corfu/Company:* Completion should trigger automatically when you type
    =​[ref:= or =​[tag:=. If not, manually invoke with =C-M-i= or =M-TAB=.
+
 5. *Debug the CAPF:* Evaluate this with point inside a =​[ref:= directive:
    #+begin_src emacs-lisp
    (tagref-completion-at-point)
