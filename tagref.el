@@ -159,7 +159,7 @@ Returns the 0-based column, or 0 if not found."
 
 ;;;; Font-lock
 
-(defvar tagref-font-lock-keywords
+(defconst tagref-font-lock-keywords
   `((,(rx "[tag:" (group (+ (not (any "]")))) "]")
      (0 'tagref-tag-face t))
     (,(rx "[ref:" (group (+ (not (any "]")))) "]")
