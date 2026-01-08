@@ -179,6 +179,9 @@ Returns the 0-based column, or 0 if not found."
 
 ;;;; Completion
 
+(defconst tagref--directive-start-regexp "\\[\\(tag\\|ref\\):"
+  "Regexp matching the start of a tagref directive.")
+
 (defun tagref--directive-at-point ()
   "Return directive info if point is inside a tagref directive.
 Returns (TYPE BEG END PREFIX) where:
@@ -190,7 +193,7 @@ Returns nil if not inside a directive."
   (save-excursion
     (let ((pt (point))
           (line-beg (line-beginning-position)))
-      (when (re-search-backward "\\[\\(tag\\|ref\\):" line-beg t)
+      (when (re-search-backward tagref--directive-start-regexp line-beg t)
         (let* ((type (match-string 1))
                (beg (match-end 0))
                (prefix (buffer-substring-no-properties beg pt)))
@@ -232,36 +235,30 @@ Returns nil if not inside a directive."
   (when (tagref--in-enabled-project-p)
     'tagref))
 
-(defun tagref--directive-type-at-point ()
-  "Return the directive type at point (\"tag\" or \"ref\"), or nil."
+(defun tagref--parse-directive-at-point ()
+  "Parse the tagref directive at point.
+Returns (TYPE . NAME) where TYPE is \"tag\" or \"ref\" and NAME is
+the tag name, or nil if point is not inside a directive."
   (save-excursion
     (let ((pt (point))
           (line-beg (line-beginning-position))
           (line-end (line-end-position)))
-      (when (re-search-backward "\\[\\(tag\\|ref\\):" line-beg t)
+      (when (re-search-backward tagref--directive-start-regexp line-beg t)
         (let ((type (match-string 1))
               (name-start (match-end 0)))
           (when (re-search-forward "\\]" line-end t)
             (let ((name-end (1- (point))))
               (when (and (>= pt name-start) (<= pt name-end))
-                type))))))))
+                (cons type (string-trim (buffer-substring-no-properties
+                                         name-start name-end)))))))))))
+
+(defun tagref--directive-type-at-point ()
+  "Return the directive type at point (\"tag\" or \"ref\"), or nil."
+  (car (tagref--parse-directive-at-point)))
 
 (defun tagref--identifier-at-point ()
   "Return the tag name at point if inside a directive."
-  (save-excursion
-    (let ((pt (point))
-          (line-beg (line-beginning-position))
-          (line-end (line-end-position)))
-      ;; Search backward for opening bracket
-      (when (re-search-backward "\\[\\(tag\\|ref\\):" line-beg t)
-        (let ((name-start (match-end 0)))
-          ;; Find closing bracket
-          (when (re-search-forward "\\]" line-end t)
-            (let ((name-end (1- (point))))
-              ;; Check if original point was within the name
-              (when (and (>= pt name-start) (<= pt name-end))
-                (string-trim (buffer-substring-no-properties
-                              name-start name-end))))))))))
+  (cdr (tagref--parse-directive-at-point)))
 
 (cl-defmethod xref-backend-identifier-at-point ((_backend (eql tagref)))
   "Return identifier at point for tagref backend."
@@ -323,15 +320,15 @@ Uses ripgrep if available, then git grep in git repos, then grep."
                                (format "\\[ref:%s\\]" tag-name) ".")))))
           (when (zerop exit-code)
             (goto-char (point-min))
-            (while (re-search-forward
-                    (cond
-                     (use-rg "^\\([^:]+\\):\\([0-9]+\\):")
-                     (use-git "^\\([^:]+\\):\\([0-9]+\\):")
-                     (t "^\\./\\([^:]+\\):\\([0-9]+\\):"))
-                    nil t)
-              (push (cons (match-string 1)
-                          (string-to-number (match-string 2)))
-                    results)))))
+            ;; rg and git grep output: FILE:LINE:...
+            ;; grep output: ./FILE:LINE:...
+            (let ((output-regexp (if (or use-rg use-git)
+                                     "^\\([^:]+\\):\\([0-9]+\\):"
+                                   "^\\./\\([^:]+\\):\\([0-9]+\\):")))
+              (while (re-search-forward output-regexp nil t)
+                (push (cons (match-string 1)
+                            (string-to-number (match-string 2)))
+                      results))))))
       (nreverse results))))
 
 (cl-defmethod xref-backend-references ((_backend (eql tagref)) identifier)
