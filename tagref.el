@@ -272,9 +272,7 @@ On a [tag:...], shows a message suggesting M-? instead."
     (let ((directive-type (tagref--directive-type-at-point)))
       (if (string= directive-type "tag")
           ;; On a tag: suggest using M-? to find references
-          (progn
-            (message "This is a tag definition. Use M-? to find references.")
-            nil)
+          (user-error "This is a tag definition.  Use M-? to find references")
         ;; On a ref (or elsewhere): show tag definition
         (let ((tags (tagref--get-tags)))
           (when-let ((info (assoc identifier tags)))
