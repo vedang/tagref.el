@@ -198,6 +198,12 @@
     (with-temp-buffer
       (insert "some text")
       (goto-char 5)
+      (expect (tagref--directive-type-at-point) :to-be nil)))
+
+  (it "returns nil when on closing bracket"
+    (with-temp-buffer
+      (insert "[ref:my_tag]")
+      (goto-char 12)  ; position of ]
       (expect (tagref--directive-type-at-point) :to-be nil))))
 
 ;;; Command Tests

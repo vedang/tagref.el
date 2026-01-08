@@ -248,10 +248,11 @@ the tag name, or nil if point is not inside a directive."
         (let ((type (match-string 1))
               (name-start (match-end 0)))
           (when (re-search-forward "\\]" line-end t)
-            (let ((name-end (1- (point))))
-              (when (and (>= pt name-start) (<= pt name-end))
+            (let* ((bracket-pos (1- (point)))  ; position of ]
+                   (name-end-pos (1- bracket-pos)))  ; last char of name
+              (when (and (>= pt name-start) (<= pt name-end-pos))
                 (cons type (string-trim (buffer-substring-no-properties
-                                         name-start name-end)))))))))))
+                                         name-start bracket-pos)))))))))))
 
 (defun tagref--directive-type-at-point ()
   "Return the directive type at point (\"tag\" or \"ref\"), or nil."
