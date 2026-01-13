@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2026 Vedang Manerikar
 
-;; Author: Vedang Manerikar
-;; Maintainer: Vedang Manerikar
+;; Author: Vedang Manerikar <@vedang>
+;; Maintainer: Vedang Manerikar <@vedang>
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "28.1"))
 ;; Keywords: tools, convenience
